@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <title>Calendar – Staff Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <style>
+        #calendar { background: #fff; border-radius: 14px; padding: 1.5rem;
+                    box-shadow: 0 2px 14px rgba(0,0,0,.06); }
+        .fc-event  { cursor: pointer; font-size: .8rem; }
+        .fc .fc-button-primary                              { background-color: #0d6efd; border-color: #0d6efd; }
+        .fc .fc-button-primary:hover                        { background-color: #0b5ed7; border-color: #0b5ed7; }
+        .fc .fc-button-primary:not(:disabled).fc-button-active,
+        .fc .fc-button-primary:not(:disabled):active        { background-color: #0a58ca; border-color: #0a58ca; }
+        .fc .fc-today-button:disabled                       { opacity: .5; }
+    </style>
+</head>
+<body class="bg-light">
+<nav th:replace="~{fragments/layout :: adminNavbar}"></nav>
+
+<div class="container-fluid px-4 py-4">
+
+    <div class="page-header d-flex align-items-center justify-content-between">
+        <div>
+            <h1><i class="bi bi-calendar3 me-2 text-primary"></i>Appointments</h1>
+            <p>Visual calendar of all scheduled appointments.</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <a th:href="@{/admin/appointments}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-ul me-1"></i>List View
+            </a>
+            <a th:href="@{/admin/appointments/export}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-download me-1"></i>Export CSV
+            </a>
+            <a th:href="@{/admin/appointments/book}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>New Booking
+            </a>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="d-flex flex-wrap gap-3 mb-3 small">
+        <span><span class="badge rounded-pill" style="background:#198754;">&nbsp;&nbsp;</span>&nbsp;Confirmed</span>
+        <span><span class="badge rounded-pill" style="background:#e6a817;">&nbsp;&nbsp;</span>&nbsp;Pending</span>
+        <span><span class="badge rounded-pill" style="background:#dc3545;">&nbsp;&nbsp;</span>&nbsp;Cancelled</span>
+        <span><span class="badge rounded-pill" style="background:#6c757d;">&nbsp;&nbsp;</span>&nbsp;Completed</span>
+    </div>
+
+    <div id="calendar"></div>
+</div>
+
+<!-- Event detail modal -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold" id="eventTitle"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-4 text-muted">Provider</dt>  <dd class="col-8" id="evProvider"></dd>
+                    <dt class="col-4 text-muted">Service</dt>   <dd class="col-8" id="evService"></dd>
+                    <dt class="col-4 text-muted">Status</dt>    <dd class="col-8" id="evStatus"></dd>
+                    <dt class="col-4 text-muted">Notes</dt>     <dd class="col-8" id="evNotes"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        data-bs-dismiss="modal">Close</button>
+                <a id="evViewAll" th:href="@{/admin/appointments}"
+                   class="btn btn-sm btn-primary">View All</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal    = new bootstrap.Modal(document.getElementById('eventModal'));
+
+    const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView:  'dayGridMonth',
+        height:       'auto',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+        eventTimeFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short' },
+        events: '/api/appointments/calendar',
+        eventClick: function (info) {
+            const p = info.event.extendedProps;
+            document.getElementById('eventTitle').textContent = info.event.title;
+            document.getElementById('evProvider').textContent = p.provider;
+            document.getElementById('evService').textContent  = p.service;
+            document.getElementById('evStatus').textContent   = p.status;
+            document.getElementById('evNotes').textContent    = p.notes || '—';
+            modal.show();
+        }
+    });
+
+    calendar.render();
+});
+</script>
+</body>
+</html>
+

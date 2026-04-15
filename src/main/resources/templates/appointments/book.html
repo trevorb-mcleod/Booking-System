@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <title>Book Appointment – BookSmart</title>
+</head>
+<body class="bg-light">
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container py-4" style="max-width: 860px;">
+
+    <div class="page-header">
+        <h1><i class="bi bi-calendar-plus me-2 text-primary"></i>Book an Appointment</h1>
+        <p>Fill in the details below — available time slots load automatically.</p>
+    </div>
+
+    <!-- Flash messages -->
+    <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${errorMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <form id="bookingForm" th:action="@{/appointments/book}" method="post">
+        <input type="hidden" name="selectedTime" id="selectedTime"/>
+
+        <div class="row g-4">
+
+            <!-- ── Left column: form steps ─────────────────────────────────── -->
+            <div class="col-lg-7">
+
+                <!-- Step 1: Client -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">1</span>
+                        <span class="step-title">Client</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Toggle -->
+                        <div class="d-flex gap-3 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="clientType"
+                                       id="existingClient" value="existing" checked/>
+                                <label class="form-check-label" for="existingClient">Existing client</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="clientType"
+                                       id="newClient" value="new"/>
+                                <label class="form-check-label" for="newClient">New client</label>
+                            </div>
+                        </div>
+
+                        <!-- Existing client picker -->
+                        <div id="existingClientSection">
+                            <select name="clientId" id="clientIdSelect" class="form-select">
+                                <option value="">— Select client —</option>
+                                <option th:each="c : ${clients}"
+                                        th:value="${c.id}"
+                                        th:text="${c.name} + ' (' + ${c.phone} + ')'"></option>
+                            </select>
+                        </div>
+
+                        <!-- New client fields -->
+                        <div id="newClientSection" style="display:none;">
+                            <!-- clientId hidden value "NEW" is injected by JS -->
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <input type="text" id="newClientName" name="newClientName"
+                                           class="form-control" placeholder="Full name" disabled/>
+                                </div>
+                                <div class="col-sm-6">
+                                    <input type="email" id="newClientEmail" name="newClientEmail"
+                                           class="form-control" placeholder="Email" disabled/>
+                                </div>
+                                <div class="col-sm-6">
+                                    <input type="text" id="newClientPhone" name="newClientPhone"
+                                           class="form-control" placeholder="Phone" disabled/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Provider -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">2</span>
+                        <span class="step-title">Provider</span>
+                    </div>
+                    <div class="card-body">
+                        <select name="providerId" id="providerSelect" class="form-select">
+                            <option value="">— Select provider —</option>
+                            <option th:each="p : ${providers}"
+                                    th:value="${p.id}"
+                                    th:text="${p.name} + ' (' + ${#temporals.format(p.workdayStart, 'h:mm a')} + '–' + ${#temporals.format(p.workdayEnd, 'h:mm a')} + ')'"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Step 3: Service (loaded dynamically) -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">3</span>
+                        <span class="step-title">Service</span>
+                    </div>
+                    <div class="card-body">
+                        <select name="serviceId" id="serviceSelect" class="form-select" disabled>
+                            <option value="">— Select a provider first —</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Step 4: Date -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">4</span>
+                        <span class="step-title">Date</span>
+                    </div>
+                    <div class="card-body">
+                        <input type="date" name="date" id="dateInput" class="form-control"
+                               style="max-width: 240px;" disabled/>
+                    </div>
+                </div>
+
+                <!-- Step 5: Time Slot -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">5</span>
+                        <span class="step-title">Available Time Slots</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="slotsContainer" class="d-flex flex-wrap gap-2">
+                            <span class="text-muted small">Select a provider, service, and date first.</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /left column -->
+
+            <!-- ── Right column: booking summary ──────────────────────────── -->
+            <div class="col-lg-5">
+                <div class="card content-card sticky-top" style="top: 80px;">
+                    <div class="card-header d-flex align-items-center">
+                        <i class="bi bi-receipt me-2 text-primary"></i>
+                        <span class="fw-semibold">Booking Summary</span>
+                    </div>
+                    <div class="card-body">
+                        <dl id="bookingSummary" class="mb-3" style="display:none;">
+                            <dt>Client</dt>    <dd id="sumClient">—</dd>
+                            <dt class="mt-2">Provider</dt> <dd id="sumProvider">—</dd>
+                            <dt class="mt-2">Service</dt>  <dd id="sumService">—</dd>
+                            <dt class="mt-2">Date</dt>     <dd id="sumDate">—</dd>
+                            <dt class="mt-2">Time</dt>     <dd id="sumTime">—</dd>
+                            <dt class="mt-2">Price</dt>    <dd id="sumPrice">—</dd>
+                        </dl>
+                        <p id="summaryPlaceholder" class="text-muted small">
+                            Complete the form to see your booking summary.
+                        </p>
+                        <button type="submit" id="submitBtn" class="btn btn-primary w-100" disabled>
+                            <i class="bi bi-check-lg me-1"></i>Confirm Booking
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /row -->
+    </form>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<script>
+/* ── DOM refs ─────────────────────────────────────────────────────────────── */
+const providerSelect = document.getElementById('providerSelect');
+const serviceSelect  = document.getElementById('serviceSelect');
+const dateInput      = document.getElementById('dateInput');
+const slotsContainer = document.getElementById('slotsContainer');
+const selectedTimeInput = document.getElementById('selectedTime');
+const submitBtn      = document.getElementById('submitBtn');
+const clientIdSelect = document.getElementById('clientIdSelect');
+
+/* ── Client type toggle ──────────────────────────────────────────────────── */
+document.querySelectorAll('input[name="clientType"]').forEach(radio => {
+    radio.addEventListener('change', function () {
+        const isNew = this.value === 'new';
+        document.getElementById('existingClientSection').style.display = isNew ? 'none' : '';
+        document.getElementById('newClientSection').style.display      = isNew ? ''     : 'none';
+        clientIdSelect.disabled                   = isNew;
+        clientIdSelect.name                       = isNew ? '' : 'clientId';
+        document.getElementById('newClientName').disabled  = !isNew;
+        document.getElementById('newClientEmail').disabled = !isNew;
+        document.getElementById('newClientPhone').disabled = !isNew;
+        // inject special marker so the controller knows to create a new client
+        if (isNew) {
+            clientIdSelect.value = '';
+            // use a hidden input to pass "NEW" as clientId
+            let h = document.getElementById('clientIdHidden');
+            if (!h) {
+                h = document.createElement('input');
+                h.type = 'hidden'; h.name = 'clientId'; h.id = 'clientIdHidden';
+                document.getElementById('bookingForm').appendChild(h);
+            }
+            h.value = 'NEW';
+        } else {
+            const h = document.getElementById('clientIdHidden');
+            if (h) h.remove();
+        }
+        updateSummary();
+    });
+});
+
+/* ── Provider → load services ────────────────────────────────────────────── */
+providerSelect.addEventListener('change', () => {
+    const pid = providerSelect.value;
+    serviceSelect.innerHTML = '<option value="">— Loading… —</option>';
+    serviceSelect.disabled  = true;
+    dateInput.disabled      = true;
+    clearSlots('Select a service and date.');
+    selectedTimeInput.value = '';
+
+    if (!pid) {
+        serviceSelect.innerHTML = '<option value="">— Select a provider first —</option>';
+        updateSummary();
+        return;
+    }
+
+    fetch(`/api/providers/${pid}/services`)
+        .then(r => r.json())
+        .then(services => {
+            if (services.length === 0) {
+                serviceSelect.innerHTML = '<option value="">No services assigned to this provider</option>';
+            } else {
+                serviceSelect.innerHTML = '<option value="">— Select service —</option>';
+                services.forEach(s => {
+                    serviceSelect.innerHTML +=
+                        `<option value="${s.id}" data-duration="${s.duration}" data-price="${s.price}">
+                            ${s.name} (${s.duration} min · $${s.price.toFixed(2)})
+                         </option>`;
+                });
+                serviceSelect.disabled = false;
+                dateInput.disabled     = false;
+            }
+            updateSummary();
+        });
+});
+
+/* ── Service or date change → load slots ─────────────────────────────────── */
+serviceSelect.addEventListener('change', fetchSlots);
+dateInput.addEventListener('change',     fetchSlots);
+
+function fetchSlots() {
+    const pid  = providerSelect.value;
+    const sid  = serviceSelect.value;
+    const date = dateInput.value;
+
+    selectedTimeInput.value = '';
+    submitBtn.disabled = true;
+
+    if (!pid || !sid || !date) {
+        clearSlots('Select a provider, service, and date.');
+        updateSummary();
+        return;
+    }
+
+    clearSlots('<span class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Loading slots…</span>');
+
+    fetch(`/api/slots?providerId=${pid}&serviceId=${sid}&date=${date}`)
+        .then(r => r.json())
+        .then(slots => {
+            if (slots.length === 0) {
+                clearSlots('<span class="text-muted small"><i class="bi bi-calendar-x me-1"></i>No open slots on this date.</span>');
+            } else {
+                slotsContainer.innerHTML = '';
+                slots.forEach(time => {
+                    const btn = document.createElement('button');
+                    btn.type      = 'button';
+                    btn.className = 'btn btn-outline-primary btn-sm slot-btn';
+                    btn.textContent = time;
+                    btn.addEventListener('click', () => selectSlot(time, btn));
+                    slotsContainer.appendChild(btn);
+                });
+            }
+            updateSummary();
+        });
+}
+
+function selectSlot(time, btn) {
+    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedTimeInput.value = time;
+    submitBtn.disabled = false;
+    updateSummary();
+}
+
+function clearSlots(msg) {
+    slotsContainer.innerHTML = msg;
+}
+
+/* ── Live summary ─────────────────────────────────────────────────────────── */
+function updateSummary() {
+    const providerOpt = providerSelect.options[providerSelect.selectedIndex];
+    const serviceOpt  = serviceSelect.options[serviceSelect.selectedIndex];
+    const isNew       = document.getElementById('newClient').checked;
+    const clientName  = isNew
+        ? (document.getElementById('newClientName').value || '(new client)')
+        : (clientIdSelect.options[clientIdSelect.selectedIndex]?.text || '—');
+
+    const ready = providerOpt?.value && serviceOpt?.value && dateInput.value;
+
+    if (!ready) {
+        document.getElementById('bookingSummary').style.display = 'none';
+        document.getElementById('summaryPlaceholder').style.display = '';
+        return;
+    }
+
+    document.getElementById('bookingSummary').style.display  = '';
+    document.getElementById('summaryPlaceholder').style.display = 'none';
+
+    document.getElementById('sumClient').textContent   = clientName;
+    document.getElementById('sumProvider').textContent = providerOpt.text;
+    document.getElementById('sumService').textContent  = serviceOpt.text;
+    document.getElementById('sumDate').textContent     = dateInput.value;
+    document.getElementById('sumTime').textContent     = selectedTimeInput.value || '(not selected)';
+    document.getElementById('sumPrice').textContent    =
+        serviceOpt.dataset.price ? '$' + parseFloat(serviceOpt.dataset.price).toFixed(2) : '—';
+}
+
+providerSelect.addEventListener('change', updateSummary);
+serviceSelect.addEventListener('change', updateSummary);
+dateInput.addEventListener('change', updateSummary);
+document.getElementById('newClientName').addEventListener('input', updateSummary);
+clientIdSelect.addEventListener('change', updateSummary);
+
+/* ── Form validation ──────────────────────────────────────────────────────── */
+document.getElementById('bookingForm').addEventListener('submit', function (e) {
+    if (!selectedTimeInput.value) {
+        e.preventDefault();
+        alert('Please select a time slot before confirming.');
+    }
+});
+</script>
+
+</body>
+</html>
+

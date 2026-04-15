@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <title>Settings – Staff Portal</title>
+</head>
+<body class="bg-light">
+<nav th:replace="~{fragments/layout :: adminNavbar}"></nav>
+
+<div class="container py-4" style="max-width: 560px;">
+
+    <div class="page-header">
+        <h1><i class="bi bi-gear me-2 text-primary"></i>Settings</h1>
+        <p>Manage your staff portal configuration.</p>
+    </div>
+
+    <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-1"></i><span th:text="${successMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${errorMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card content-card">
+        <div class="card-header">
+            <i class="bi bi-key me-2 text-primary"></i>Change Admin PIN
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-4">
+                Your PIN must be at least 4 characters. Changes take effect immediately but
+                are not written back to <code>application.properties</code> — restart the
+                server to revert to the file-based PIN.
+            </p>
+            <form th:action="@{/admin/settings/pin}" method="post">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Current PIN</label>
+                    <input type="password" name="currentPin" class="form-control"
+                           placeholder="Enter your current PIN" required autocomplete="current-password"/>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">New PIN</label>
+                    <input type="password" name="newPin" id="newPin" class="form-control"
+                           placeholder="At least 4 characters" minlength="4" required autocomplete="new-password"/>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Confirm New PIN</label>
+                    <input type="password" name="confirmPin" id="confirmPin" class="form-control"
+                           placeholder="Repeat new PIN" minlength="4" required autocomplete="new-password"/>
+                    <div id="pinMismatch" class="form-text text-danger" style="display:none;">
+                        PINs do not match.
+                    </div>
+                </div>
+                <button type="submit" id="saveBtn" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Update PIN
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+// Live PIN match check
+const newPin     = document.getElementById('newPin');
+const confirmPin = document.getElementById('confirmPin');
+const mismatch   = document.getElementById('pinMismatch');
+const saveBtn    = document.getElementById('saveBtn');
+
+function checkMatch() {
+    const noMatch = confirmPin.value.length > 0 && newPin.value !== confirmPin.value;
+    mismatch.style.display = noMatch ? '' : 'none';
+    saveBtn.disabled = noMatch;
+}
+
+newPin.addEventListener('input', checkMatch);
+confirmPin.addEventListener('input', checkMatch);
+</script>
+</body>
+</html>
+

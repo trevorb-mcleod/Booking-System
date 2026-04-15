@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <title>Booking Confirmed – BookSmart</title>
+</head>
+<body class="bg-light">
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container py-5" style="max-width: 640px;">
+
+    <div class="card content-card text-center p-4">
+        <div class="mb-3">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+        </div>
+        <h1 class="h3 fw-bold mb-1">Booking Confirmed!</h1>
+        <p class="text-muted mb-4">
+            Thanks, <span class="fw-semibold" th:text="${apptClientName}">there</span>!
+            Your appointment has been booked.
+        </p>
+
+        <dl class="text-start mx-auto" style="max-width: 380px;">
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Confirmation&nbsp;#</dt>
+                <dd class="col-7 fw-semibold font-monospace" th:text="${apptId}"></dd>
+            </div>
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Provider</dt>
+                <dd class="col-7" th:text="${apptProvider}"></dd>
+            </div>
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Service</dt>
+                <dd class="col-7" th:text="${apptService}"></dd>
+            </div>
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Date</dt>
+                <dd class="col-7" th:text="${apptDate}"></dd>
+            </div>
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Time</dt>
+                <dd class="col-7" th:text="${apptTime + ' – ' + apptEndTime}"></dd>
+            </div>
+        </dl>
+
+        <hr class="my-3"/>
+
+        <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
+            <a th:href="@{/ical/{id}(id=${apptId})}" class="btn btn-success">
+                <i class="bi bi-calendar-check me-1"></i>Add to Calendar
+            </a>
+            <a th:href="@{/book}" class="btn btn-primary">
+                <i class="bi bi-calendar-plus me-1"></i>Book Another
+            </a>
+            <a th:href="@{/}" class="btn btn-outline-secondary">
+                <i class="bi bi-house me-1"></i>Home
+            </a>
+            <a th:if="${apptCancelToken}" th:href="@{/cancel/{t}(t=${apptCancelToken})}"
+               class="btn btn-outline-danger">
+                <i class="bi bi-x-circle me-1"></i>Cancel Appointment
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
+

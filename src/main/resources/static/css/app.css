@@ -1,0 +1,140 @@
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+body {
+    font-size: 0.9rem;
+    background-color: #f4f6fb;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────────────────── */
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: -0.3px;
+}
+
+/* ── Stat cards (dashboard) ──────────────────────────────────────────────── */
+.stat-card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.07);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.11);
+}
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* ── Main content card ───────────────────────────────────────────────────── */
+.content-card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+.content-card .card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #eef0f5;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+.table th {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8a93a7;
+    border-top: none;
+}
+.table td {
+    vertical-align: middle;
+}
+.table > :not(caption) > * > * {
+    padding: 0.65rem 0.85rem;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────────── */
+.page-header {
+    margin-bottom: 1.5rem;
+}
+.page-header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+.page-header p {
+    color: #6c757d;
+    margin: 0;
+}
+
+/* ── Status badges ───────────────────────────────────────────────────────── */
+.badge-CONFIRMED  { background-color: #198754; }
+.badge-PENDING    { background-color: #ffc107; color: #000; }
+.badge-CANCELLED  { background-color: #dc3545; }
+.badge-COMPLETED  { background-color: #6c757d; }
+
+/* ── Slot picker buttons ─────────────────────────────────────────────────── */
+.slot-btn {
+    min-width: 80px;
+    font-size: 0.85rem;
+    transition: all 0.12s ease;
+}
+.slot-btn.selected,
+.slot-btn:hover {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+    border-color: #0d6efd !important;
+}
+
+/* ── Booking form steps ──────────────────────────────────────────────────── */
+.step-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+.step-title {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* ── Booking summary card ────────────────────────────────────────────────── */
+#bookingSummary {
+    background: #f8f9ff;
+    border: 1px solid #dde3f3;
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+#bookingSummary dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8a93a7;
+    font-weight: 700;
+}
+#bookingSummary dd {
+    font-weight: 500;
+    color: #1a1e2e;
+}
+
+/* ── Alerts ──────────────────────────────────────────────────────────────── */
+.alert {
+    border-radius: 10px;
+}
+

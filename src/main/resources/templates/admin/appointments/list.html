@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <title>Appointments – Staff Portal</title>
+</head>
+<body class="bg-light">
+<nav th:replace="~{fragments/layout :: adminNavbar}"></nav>
+<div class="container-fluid px-4 py-4">
+
+    <div class="page-header d-flex align-items-center justify-content-between">
+        <div>
+            <h1><i class="bi bi-calendar3 me-2 text-primary"></i>Appointments</h1>
+            <p th:text="${filterLabel}">All Appointments</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <a th:href="@{/admin/appointments/calendar}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-calendar3 me-1"></i>Calendar View
+            </a>
+            <a th:href="@{/admin/appointments/export}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-download me-1"></i>Export CSV
+            </a>
+            <a th:href="@{/admin/appointments/book}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>New Booking
+            </a>
+        </div>
+    </div>
+
+    <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-1"></i><span th:text="${successMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${errorMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Filters -->
+    <div class="card content-card mb-3">
+        <div class="card-body">
+            <form th:action="@{/admin/appointments}" method="get" class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label fw-semibold mb-1">By Date</label>
+                    <input type="date" name="date" class="form-control form-control-sm" style="width:180px;"/>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label fw-semibold mb-1">By Provider</label>
+                    <select name="providerId" class="form-select form-select-sm" style="width:180px;">
+                        <option value="">— All —</option>
+                        <option th:each="p : ${providers}" th:value="${p.id}" th:text="${p.name}"></option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label fw-semibold mb-1">By Client</label>
+                    <select name="clientId" class="form-select form-select-sm" style="width:180px;">
+                        <option value="">— All —</option>
+                        <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}"></option>
+                    </select>
+                </div>
+                <div class="col-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Filter</button>
+                    <a th:href="@{/admin/appointments}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card content-card">
+        <div class="card-body p-0">
+            <div th:if="${appointments.empty}" class="text-center text-muted py-5">
+                <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>No appointments found.
+                <div class="mt-2">
+                    <a th:href="@{/admin/appointments/book}" class="btn btn-sm btn-primary">Book One Now</a>
+                </div>
+            </div>
+            <table th:if="${!appointments.empty}" class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date &amp; Time</th>
+                        <th>Client</th>
+                        <th>Provider</th>
+                        <th>Service</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="a : ${appointments}">
+                        <td class="fw-semibold" th:text="${#temporals.format(a.startTime, 'MMM d, yyyy h:mm a')}"></td>
+                        <td th:text="${a.client.name}"></td>
+                        <td th:text="${a.provider.name}"></td>
+                        <td th:text="${a.service.name}"></td>
+                        <td>
+                            <span th:switch="${a.status.toString()}">
+                                <span th:case="'CONFIRMED'"  class="badge bg-success">Confirmed</span>
+                                <span th:case="'PENDING'"    class="badge bg-warning text-dark">Pending</span>
+                                <span th:case="'CANCELLED'"  class="badge bg-danger">Cancelled</span>
+                                <span th:case="'COMPLETED'"  class="badge bg-secondary">Completed</span>
+                                <span th:case="*"            class="badge bg-secondary" th:text="${a.status}"></span>
+                            </span>
+                        </td>
+                        <td class="text-muted small" th:text="${a.notes}"></td>
+                        <td class="text-end">
+                            <!-- Complete -->
+                            <form th:if="${a.status.toString() == 'CONFIRMED'}"
+                                  th:action="@{/admin/appointments/{id}/complete(id=${a.id})}" method="post"
+                                  class="d-inline">
+                                <button class="btn btn-sm btn-outline-success me-1"
+                                        title="Mark Complete">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                            </form>
+                            <!-- Notes -->
+                            <button class="btn btn-sm btn-outline-secondary me-1"
+                                    data-bs-toggle="modal"
+                                    th:data-bs-target="'#notes-' + ${a.id}"
+                                    title="Edit Notes">
+                                <i class="bi bi-sticky"></i>
+                            </button>
+                            <!-- Cancel -->
+                            <form th:if="${a.status.toString() != 'CANCELLED'}"
+                                  th:action="@{/admin/appointments/{id}/cancel(id=${a.id})}" method="post"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Cancel this appointment?')">
+                                <button class="btn btn-sm btn-outline-danger" title="Cancel">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Notes modals -->
+<div th:each="a : ${appointments}">
+    <div class="modal fade" th:id="'notes-' + ${a.id}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/admin/appointments/{id}/notes(id=${a.id})}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-sticky me-1"></i>Notes</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <textarea name="notes" class="form-control" rows="4"
+                                  th:text="${a.notes}"
+                                  placeholder="Add notes…"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
+

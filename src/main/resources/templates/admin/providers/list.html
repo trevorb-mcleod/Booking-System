@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <title>Providers – Staff Portal</title>
+</head>
+<body class="bg-light">
+<nav th:replace="~{fragments/layout :: adminNavbar}"></nav>
+<div class="container-fluid px-4 py-4">
+
+    <div class="page-header d-flex align-items-center justify-content-between">
+        <div>
+            <h1><i class="bi bi-person-badge me-2 text-primary"></i>Providers</h1>
+            <p>Manage your staff and assign the services they offer.</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+            <i class="bi bi-plus-lg me-1"></i>Add Provider
+        </button>
+    </div>
+
+    <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-1"></i><span th:text="${successMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${errorMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card content-card">
+        <div class="card-body p-0">
+            <div th:if="${providers.empty}" class="text-center text-muted py-5">
+                <i class="bi bi-person-badge fs-2 d-block mb-2"></i>No providers yet — add one above.
+            </div>
+            <table th:if="${!providers.empty}" class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Hours</th>
+                        <th>Services</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="p : ${providers}">
+                        <td>
+                            <div class="fw-semibold" th:text="${p.name}"></div>
+                            <div class="text-muted small font-monospace" th:text="${p.id}"></div>
+                        </td>
+                        <td th:text="${p.email}"></td>
+                        <td th:text="${p.phone}"></td>
+                        <td th:text="${#temporals.format(p.workdayStart, 'h:mm a')} + ' – ' + ${#temporals.format(p.workdayEnd, 'h:mm a')}"></td>
+                        <td>
+                            <span th:if="${p.serviceIds.empty}" class="text-muted small">None assigned</span>
+                            <th:block th:each="sid : ${p.serviceIds}">
+                                <th:block th:each="s : ${services}" th:if="${s.id == sid}">
+                                    <span class="badge bg-secondary me-1" th:text="${s.name}"></span>
+                                </th:block>
+                            </th:block>
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-secondary me-1"
+                                    data-bs-toggle="modal"
+                                    th:data-bs-target="'#editProv-' + ${p.id}">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary me-1"
+                                    data-bs-toggle="modal"
+                                    th:data-bs-target="'#assignSvc-' + ${p.id}">
+                                <i class="bi bi-plus-circle"></i> Assign
+                            </button>
+                            <form th:action="@{/admin/providers/{id}/delete(id=${p.id})}" method="post"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Remove this provider?')">
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Provider modals -->
+<div th:each="p : ${providers}">
+    <div class="modal fade" th:id="'editProv-' + ${p.id}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/admin/providers/{id}/edit(id=${p.id})}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-pencil me-1"></i>Edit Provider</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Name</label>
+                            <input type="text" name="name" class="form-control" th:value="${p.name}" required/>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" name="email" class="form-control" th:value="${p.email}"/>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Phone</label>
+                            <input type="text" name="phone" class="form-control" th:value="${p.phone}"/>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label fw-semibold">Work Start</label>
+                                <input type="time" name="workStart" class="form-control"
+                                       th:value="${p.workdayStart}" required/>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label fw-semibold">Work End</label>
+                                <input type="time" name="workEnd" class="form-control"
+                                       th:value="${p.workdayEnd}" required/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Service modals -->
+<div th:each="p : ${providers}">
+    <div class="modal fade" th:id="'assignSvc-' + ${p.id}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/admin/providers/{id}/assign-service(id=${p.id})}" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-plus-circle me-1"></i>Assign Service to <span th:text="${p.name}"></span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label fw-semibold">Service</label>
+                        <select name="serviceId" class="form-select" required>
+                            <option value="">— Select service —</option>
+                            <option th:each="s : ${services}"
+                                    th:value="${s.id}"
+                                    th:text="${s.name} + ' (' + ${s.durationMinutes} + ' min · $' + ${s.price} + ')'"></option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Assign</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Provider Modal -->
+<div class="modal fade" id="addProviderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/admin/providers}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-plus me-1"></i>Add Provider</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Jane Smith" required/>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="jane@example.com"/>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Phone</label>
+                        <input type="text" name="phone" class="form-control" placeholder="555-1234"/>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Work Start</label>
+                            <input type="time" name="workStart" class="form-control" value="09:00" required/>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Work End</label>
+                            <input type="time" name="workEnd" class="form-control" value="17:00" required/>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Provider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
+

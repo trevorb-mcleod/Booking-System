@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <title>Cancel Appointment</title>
+</head>
+<body class="bg-light">
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container py-5" style="max-width: 620px;">
+
+    <!-- ── Invalid token ──────────────────────────────────────────────────── -->
+    <div th:if="${invalid}" class="card content-card text-center p-4">
+        <div class="mb-3">
+            <i class="bi bi-exclamation-circle-fill text-danger" style="font-size: 3.5rem;"></i>
+        </div>
+        <h1 class="h4 fw-bold mb-2">Invalid Cancellation Link</h1>
+        <p class="text-muted mb-4">This link is not valid or has already expired.</p>
+        <a th:href="@{/}" class="btn btn-outline-secondary">
+            <i class="bi bi-house me-1"></i>Back to Home
+        </a>
+    </div>
+
+    <!-- ── Just cancelled (success) ──────────────────────────────────────── -->
+    <div th:if="${appt != null and justCancelled == true}" class="card content-card text-center p-4">
+        <div class="mb-3">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 3.5rem;"></i>
+        </div>
+        <h1 class="h4 fw-bold mb-2">Appointment Cancelled</h1>
+        <p class="text-muted mb-4">
+            Your appointment has been cancelled. A confirmation email has been sent to you.
+        </p>
+        <a th:href="@{/book}" class="btn btn-primary me-2">
+            <i class="bi bi-calendar-plus me-1"></i>Book a New Appointment
+        </a>
+        <a th:href="@{/}" class="btn btn-outline-secondary">
+            <i class="bi bi-house me-1"></i>Home
+        </a>
+    </div>
+
+    <!-- ── Already cancelled ─────────────────────────────────────────────── -->
+    <div th:if="${appt != null and isCancelled == true and justCancelled != true}"
+         class="card content-card text-center p-4">
+        <div class="mb-3">
+            <i class="bi bi-info-circle-fill text-secondary" style="font-size: 3.5rem;"></i>
+        </div>
+        <h1 class="h4 fw-bold mb-2">Already Cancelled</h1>
+        <p class="text-muted mb-4">This appointment has already been cancelled.</p>
+        <a th:href="@{/book}" class="btn btn-primary me-2">
+            <i class="bi bi-calendar-plus me-1"></i>Book a New Appointment
+        </a>
+        <a th:href="@{/}" class="btn btn-outline-secondary">
+            <i class="bi bi-house me-1"></i>Home
+        </a>
+    </div>
+
+    <!-- ── Confirm cancellation ───────────────────────────────────────────── -->
+    <div th:if="${appt != null and isConfirmed == true}"
+         class="card content-card p-4">
+        <div class="text-center mb-4">
+            <i class="bi bi-calendar-x text-danger" style="font-size: 3rem;"></i>
+            <h1 class="h4 fw-bold mt-2 mb-1">Cancel Your Appointment?</h1>
+            <p class="text-muted">Please review your appointment details below before cancelling.</p>
+        </div>
+
+        <dl class="mx-auto mb-4" style="max-width: 380px;">
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Confirmation&nbsp;#</dt>
+                <dd class="col-7 fw-semibold font-monospace" th:text="${appt.id}"></dd>
+            </div>
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Provider</dt>
+                <dd class="col-7" th:text="${appt.provider.name}"></dd>
+            </div>
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Service</dt>
+                <dd class="col-7" th:text="${appt.service.name}"></dd>
+            </div>
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Date</dt>
+                <dd class="col-7" th:text="${#temporals.format(appt.startTime, 'MMMM d, yyyy')}"></dd>
+            </div>
+            <div class="row mb-2">
+                <dt class="col-5 text-muted">Time</dt>
+                <dd class="col-7"
+                    th:text="${#temporals.format(appt.startTime, 'h:mm a') + ' – ' + #temporals.format(appt.endTime, 'h:mm a')}"></dd>
+            </div>
+        </dl>
+
+        <div class="alert alert-warning text-center">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            This action cannot be undone.
+        </div>
+
+        <div class="d-flex gap-2 justify-content-center mt-3 flex-wrap">
+            <form th:action="@{/cancel/{token}(token=${appt.cancelToken})}" method="post">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-x-circle me-1"></i>Yes, Cancel My Appointment
+                </button>
+            </form>
+            <a th:href="@{/}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Keep My Appointment
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
+

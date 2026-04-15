@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+    <title>Book an Appointment – BookSmart</title>
+</head>
+<body class="bg-light">
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container py-4" style="max-width: 860px;">
+
+    <div class="page-header">
+        <h1><i class="bi bi-calendar-plus me-2 text-primary"></i>Book an Appointment</h1>
+        <p>Fill in your details — available time slots load automatically.</p>
+    </div>
+
+    <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${errorMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <form id="bookingForm" th:action="@{/book}" method="post">
+        <input type="hidden" name="selectedTime" id="selectedTime"/>
+
+        <div class="row g-4">
+
+            <!-- ── Left column ──────────────────────────────────────────────── -->
+            <div class="col-lg-7">
+
+                <!-- Step 1: Your Info -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">1</span>
+                        <span class="step-title">Your Information</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" name="customerName" id="customerName"
+                                       class="form-control" placeholder="e.g. Alex Johnson" required/>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                                <input type="email" name="customerEmail"
+                                       class="form-control" placeholder="you@email.com" required/>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold">Phone</label>
+                                <input type="text" name="customerPhone"
+                                       class="form-control" placeholder="555-1234"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Provider -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">2</span>
+                        <span class="step-title">Provider</span>
+                    </div>
+                    <div class="card-body">
+                        <select name="providerId" id="providerSelect" class="form-select">
+                            <option value="">— Select provider —</option>
+                            <option value="ANY">🎲 Any Available Provider</option>
+                            <option th:each="p : ${providers}"
+                                    th:value="${p.id}"
+                                    th:selected="${p.id == selectedProviderId}"
+                                    th:text="${p.name} + ' (' + ${#temporals.format(p.workdayStart, 'h:mm a')} + '–' + ${#temporals.format(p.workdayEnd, 'h:mm a')} + ')'"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Step 3: Service -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">3</span>
+                        <span class="step-title">Service</span>
+                    </div>
+                    <div class="card-body">
+                        <select name="serviceId" id="serviceSelect" class="form-select" disabled>
+                            <option value="">— Select a provider first —</option>
+                        </select>
+                        <div id="customServiceBox" class="mt-3" style="display:none;">
+                            <label class="form-label fw-semibold">
+                                Please describe the service you need <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="notes" id="customServiceDesc" class="form-control" rows="3"
+                                      placeholder="e.g. I'd like a deep tissue massage focusing on my lower back and shoulders…"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Date -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">4</span>
+                        <span class="step-title">Date</span>
+                    </div>
+                    <div class="card-body">
+                        <input type="date" name="date" id="dateInput" class="form-control"
+                               style="max-width: 240px;" disabled/>
+                    </div>
+                </div>
+
+                <!-- Step 5: Time Slot -->
+                <div class="card content-card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <span class="step-label">5</span>
+                        <span class="step-title">Available Time Slots</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="slotsContainer" class="d-flex flex-wrap gap-2">
+                            <span class="text-muted small">Select a provider, service, and date first.</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /left column -->
+
+            <!-- ── Right column: booking summary ──────────────────────────── -->
+            <div class="col-lg-5">
+                <div class="card content-card sticky-top" style="top: 80px;">
+                    <div class="card-header d-flex align-items-center">
+                        <i class="bi bi-receipt me-2 text-primary"></i>
+                        <span class="fw-semibold">Booking Summary</span>
+                    </div>
+                    <div class="card-body">
+                        <dl id="bookingSummary" class="mb-3" style="display:none;">
+                            <dt>Provider</dt> <dd id="sumProvider">—</dd>
+                            <dt class="mt-2">Service</dt>  <dd id="sumService">—</dd>
+                            <dt class="mt-2">Date</dt>     <dd id="sumDate">—</dd>
+                            <dt class="mt-2">Time</dt>     <dd id="sumTime">—</dd>
+                            <dt class="mt-2">Price</dt>    <dd id="sumPrice">—</dd>
+                        </dl>
+                        <p id="summaryPlaceholder" class="text-muted small">
+                            Complete the form to see your booking summary.
+                        </p>
+                        <button type="submit" id="submitBtn" class="btn btn-primary w-100" disabled>
+                            <i class="bi bi-check-lg me-1"></i>Confirm Booking
+                        </button>
+                        <a th:href="@{/}" class="btn btn-outline-secondary w-100 mt-2">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /row -->
+    </form>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<script>
+const providerSelect    = document.getElementById('providerSelect');
+const serviceSelect     = document.getElementById('serviceSelect');
+const dateInput         = document.getElementById('dateInput');
+const slotsContainer    = document.getElementById('slotsContainer');
+const selectedTimeInput = document.getElementById('selectedTime');
+const submitBtn         = document.getElementById('submitBtn');
+
+// Prevent past dates
+dateInput.min = new Date().toISOString().split('T')[0];
+
+// Tracks available providers per slot when "Any Provider" is chosen
+let anySlotProviders  = {};   // { "9:00 AM": [{id, name}, ...], ... }
+let resolvedProviderId   = '';
+let resolvedProviderName = '';
+
+/* ── Helpers ──────────────────────────────────────────────────────────────── */
+function timeToMinutes(t) {
+    const m = t.match(/(\d+):(\d+)\s+(AM|PM)/i);
+    if (!m) return 0;
+    let h = parseInt(m[1]), min = parseInt(m[2]);
+    const pm = m[3].toUpperCase() === 'PM';
+    if (pm && h !== 12) h += 12;
+    if (!pm && h === 12) h = 0;
+    return h * 60 + min;
+}
+
+function isSlotPast(timeStr, dateStr) {
+    const today = new Date().toISOString().split('T')[0];
+    if (dateStr !== today) return false;
+    const slotMinutes = timeToMinutes(timeStr);
+    const now = new Date();
+    return slotMinutes <= now.getHours() * 60 + now.getMinutes();
+}
+
+function buildServiceOption(s) {
+    if (s.custom) {
+        return `<option value="${s.id}" data-custom="true">Other (please describe)</option>`;
+    }
+    return `<option value="${s.id}" data-duration="${s.duration}" data-price="${s.price}">${s.name} (${s.duration} min · $${s.price.toFixed(2)})</option>`;
+}
+
+/* ── Provider → load services ──────────────────────────────────────────── */
+providerSelect.addEventListener('change', () => {
+    const pid = providerSelect.value;
+    serviceSelect.innerHTML = '<option value="">— Loading… —</option>';
+    serviceSelect.disabled  = true;
+    dateInput.disabled      = true;
+    clearSlots('Select a service and date.');
+    selectedTimeInput.value  = '';
+    resolvedProviderId       = '';
+    resolvedProviderName     = '';
+    anySlotProviders         = {};
+    submitBtn.disabled       = true;
+    document.getElementById('customServiceBox').style.display = 'none';
+
+    if (!pid) {
+        serviceSelect.innerHTML = '<option value="">— Select a provider first —</option>';
+        updateSummary();
+        return;
+    }
+
+    const url = pid === 'ANY' ? '/api/services' : `/api/providers/${pid}/services`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(services => {
+            if (services.length === 0) {
+                serviceSelect.innerHTML = '<option value="">No services available</option>';
+            } else {
+                serviceSelect.innerHTML = '<option value="">— Select service —</option>';
+                services.forEach(s => { serviceSelect.innerHTML += buildServiceOption(s); });
+                serviceSelect.disabled = false;
+                dateInput.disabled     = false;
+            }
+            updateSummary();
+        });
+});
+
+/* ── Service change → show/hide "Other" textarea ──────────────────────── */
+serviceSelect.addEventListener('change', () => {
+    const opt = serviceSelect.options[serviceSelect.selectedIndex];
+    const isCustom = opt && opt.dataset.custom === 'true';
+    document.getElementById('customServiceBox').style.display = isCustom ? '' : 'none';
+    if (!isCustom) document.getElementById('customServiceDesc').value = '';
+    fetchSlots();
+});
+
+dateInput.addEventListener('change', fetchSlots);
+
+/* ── Fetch available time slots ───────────────────────────────────────── */
+function fetchSlots() {
+    const pid  = providerSelect.value;
+    const sid  = serviceSelect.value;
+    const date = dateInput.value;
+
+    selectedTimeInput.value  = '';
+    resolvedProviderId       = '';
+    resolvedProviderName     = '';
+    anySlotProviders         = {};
+    submitBtn.disabled       = true;
+
+    if (!pid || !sid || !date) {
+        clearSlots('Select a provider, service, and date.');
+        updateSummary();
+        return;
+    }
+
+    clearSlots('<span class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Loading slots…</span>');
+
+    if (pid === 'ANY') {
+        // Fetch slots for every real provider in parallel, then merge
+        const providerOpts = Array.from(providerSelect.options)
+            .filter(opt => opt.value && opt.value !== 'ANY');
+
+        Promise.all(providerOpts.map(opt =>
+            fetch(`/api/slots?providerId=${opt.value}&serviceId=${sid}&date=${date}`)
+                .then(r => r.json())
+                .then(slots => ({
+                    id:   opt.value,
+                    name: opt.text.split(' (')[0].trim(),
+                    slots
+                }))
+        )).then(results => {
+            anySlotProviders = {};
+            results.forEach(({id, name, slots}) => {
+                slots.forEach(time => {
+                    if (!anySlotProviders[time]) anySlotProviders[time] = [];
+                    anySlotProviders[time].push({id, name});
+                });
+            });
+            const allTimes = Object.keys(anySlotProviders)
+                .sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
+            renderSlots(allTimes, date);
+            updateSummary();
+        });
+    } else {
+        fetch(`/api/slots?providerId=${pid}&serviceId=${sid}&date=${date}`)
+            .then(r => r.json())
+            .then(slots => { renderSlots(slots, date); updateSummary(); });
+    }
+}
+
+function renderSlots(slots, date) {
+    if (slots.length === 0) {
+        clearSlots('<span class="text-muted small"><i class="bi bi-calendar-x me-1"></i>No open slots on this date.</span>');
+        return;
+    }
+    slotsContainer.innerHTML = '';
+    slots.forEach(time => {
+        const past = isSlotPast(time, date);
+        const btn  = document.createElement('button');
+        btn.type        = 'button';
+        btn.textContent = time;
+        if (past) {
+            btn.className   = 'btn btn-outline-secondary btn-sm slot-btn';
+            btn.disabled    = true;
+            btn.title       = 'This time has already passed';
+        } else {
+            btn.className   = 'btn btn-outline-primary btn-sm slot-btn';
+            btn.addEventListener('click', () => selectSlot(time, btn));
+        }
+        slotsContainer.appendChild(btn);
+    });
+}
+
+function selectSlot(time, btn) {
+    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedTimeInput.value = time;
+
+    if (providerSelect.value === 'ANY') {
+        const available = anySlotProviders[time] || [];
+        if (available.length > 0) {
+            const picked       = available[Math.floor(Math.random() * available.length)];
+            resolvedProviderId   = picked.id;
+            resolvedProviderName = picked.name;
+        }
+    }
+
+    submitBtn.disabled = false;
+    updateSummary();
+}
+
+function clearSlots(msg) {
+    slotsContainer.innerHTML = msg;
+    submitBtn.disabled = true;
+}
+
+/* ── Live booking summary ─────────────────────────────────────────────── */
+function updateSummary() {
+    const providerOpt = providerSelect.options[providerSelect.selectedIndex];
+    const serviceOpt  = serviceSelect.options[serviceSelect.selectedIndex];
+    const ready = providerOpt?.value && serviceOpt?.value && dateInput.value;
+
+    if (!ready) {
+        document.getElementById('bookingSummary').style.display     = 'none';
+        document.getElementById('summaryPlaceholder').style.display = '';
+        return;
+    }
+
+    document.getElementById('bookingSummary').style.display     = '';
+    document.getElementById('summaryPlaceholder').style.display = 'none';
+
+    const isAny      = providerOpt.value === 'ANY';
+    const isCustom   = serviceOpt.dataset.custom === 'true';
+    const provText   = isAny ? (resolvedProviderName || 'Any Available Provider') : providerOpt.text;
+    const svcText    = isCustom ? 'Other (Custom)' : serviceOpt.text;
+    const priceText  = isCustom ? 'TBD' : (serviceOpt.dataset.price ? '$' + parseFloat(serviceOpt.dataset.price).toFixed(2) : '—');
+
+    // Format date as "April 15, 2026" instead of raw ISO
+    const [y, mo, d] = dateInput.value.split('-').map(Number);
+    const friendlyDate = new Date(y, mo - 1, d)
+        .toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    document.getElementById('sumProvider').textContent = provText;
+    document.getElementById('sumService').textContent  = svcText;
+    document.getElementById('sumDate').textContent     = friendlyDate;
+    document.getElementById('sumTime').textContent     = selectedTimeInput.value || '(not selected)';
+    document.getElementById('sumPrice').textContent    = priceText;
+}
+
+providerSelect.addEventListener('change', updateSummary);
+dateInput.addEventListener('change',      updateSummary);
+
+// Auto-load services if a provider was pre-selected (e.g. from the team page)
+if (providerSelect.value) {
+    providerSelect.dispatchEvent(new Event('change'));
+}
+
+/* ── Form validation & submission ─────────────────────────────────────── */
+document.getElementById('bookingForm').addEventListener('submit', function (e) {
+    if (!selectedTimeInput.value) {
+        e.preventDefault();
+        alert('Please select a time slot before confirming.');
+        return;
+    }
+    const serviceOpt = serviceSelect.options[serviceSelect.selectedIndex];
+    if (serviceOpt && serviceOpt.dataset.custom === 'true') {
+        const desc = document.getElementById('customServiceDesc').value.trim();
+        if (!desc) {
+            e.preventDefault();
+            alert('Please describe the service you need.');
+            return;
+        }
+    }
+    if (providerSelect.value === 'ANY') {
+        if (!resolvedProviderId) {
+            e.preventDefault();
+            alert('Could not assign a provider for this slot. Please try again.');
+            return;
+        }
+        providerSelect.value = resolvedProviderId;
+    }
+});
+</script>
+</body>
+</html>
+

@@ -1,0 +1,36 @@
+spring.application.name=Booking System
+server.port=8080
+spring.thymeleaf.cache=true
+
+# ── SQLite Database ────────────────────────────────────────────────────────────
+spring.datasource.url=jdbc:sqlite:booking.db
+spring.datasource.driver-class-name=org.sqlite.JDBC
+spring.datasource.hikari.maximum-pool-size=1
+spring.jpa.database-platform=org.hibernate.community.dialect.SQLiteDialect
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.open-in-view=false
+
+# ── Business branding ─────────────────────────────────────────────────────────
+booking.business-name=YourBusinessName
+booking.tagline=Appointment Booking Made Easy
+# Set to your public domain before deploying (used in cancel links sent by email)
+booking.base-url=https://yourdomain.com
+
+# ── Staff portal PIN (change per deployment) ──────────────────────────────────
+booking.admin.pin=CHANGE_ME
+
+# ── Email / reminders ─────────────────────────────────────────────────────────
+booking.email.enabled=true
+booking.reminders.enabled=true
+# Must match a verified sender address in your SMTP provider
+booking.reminders.from=no-reply@yourdomain.com
+
+# Brevo (recommended): https://app.brevo.com → SMTP & API → SMTP Keys
+spring.mail.host=smtp-relay.brevo.com
+spring.mail.port=587
+spring.mail.username=YOUR_BREVO_SMTP_LOGIN
+spring.mail.password=YOUR_BREVO_SMTP_KEY
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
