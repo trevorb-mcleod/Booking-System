@@ -2,6 +2,26 @@
 
 A self-hosted appointment booking system built with Spring Boot, Thymeleaf, and SQLite.
 
+## Project layout
+
+Open the **repository root** (the folder that contains `pom.xml` and `src/`). All application code lives under standard Maven paths:
+
+```
+booking-system/
+├── pom.xml                          # Maven build (Java 21, Spring Boot 3)
+├── mvnw, mvnw.cmd                   # Maven Wrapper — no global Maven install required
+├── start.sh                         # Local dev start script
+├── README.md
+└── src/main/
+    ├── java/org/example/            # Java source (controllers, models, config)
+    └── resources/
+        ├── application.properties.example   # Copy to application.properties (gitignored)
+        ├── static/css/              # Stylesheets
+        └── templates/               # Thymeleaf HTML (customer + admin UI)
+```
+
+If your editor shows an empty folder, you may have opened a parent directory instead of the clone, or the clone did not finish — run `git clone https://github.com/trevorb-mcleod/booking-system.git` and open that folder. On GitHub, browse the `src/` directory to confirm files are present.
+
 ## Features
 
 - **Customer portal** — book appointments, choose a provider (or "Any Available"), pick a date/time, receive email confirmation with a one-click cancellation link
@@ -34,8 +54,17 @@ Edit `application.properties`:
 
 ### 2. Run
 
+Requires **Java 21+**. From the repo root:
+
 ```bash
+chmod +x start.sh mvnw   # first time on macOS/Linux
 ./start.sh
+```
+
+Or without the script:
+
+```bash
+./mvnw spring-boot:run
 ```
 
 The app starts on **http://localhost:8080** by default.
