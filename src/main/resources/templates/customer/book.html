@@ -47,9 +47,43 @@
                                        class="form-control" placeholder="you@email.com" required/>
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label fw-semibold">Phone</label>
-                                <input type="text" name="customerPhone"
-                                       class="form-control" placeholder="555-1234"/>
+                                <label class="form-label fw-semibold">
+                                    Phone
+                                    <span id="phoneRequiredMark" class="text-danger" style="display:none;">*</span>
+                                </label>
+                                <input type="tel" name="customerPhone" id="customerPhone"
+                                       class="form-control" placeholder="555-123-4567"/>
+                            </div>
+                            <div class="col-12 mt-2" th:if="${remindersEnabled}">
+                                <label class="form-label fw-semibold">Reminder (about 24 hours before)</label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="reminderChannel"
+                                               id="reminderEmail" value="EMAIL" checked/>
+                                        <label class="form-check-label" for="reminderEmail">
+                                            <i class="bi bi-envelope me-1"></i>Email
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="reminderChannel"
+                                               id="reminderSms" value="SMS"
+                                               th:disabled="${!smsRemindersAvailable}"/>
+                                        <label class="form-check-label" for="reminderSms">
+                                            <i class="bi bi-phone me-1"></i>Text message (SMS)
+                                        </label>
+                                    </div>
+                                </div>
+                                <p th:if="${!smsRemindersAvailable}" class="text-muted small mb-0 mt-1">
+                                    SMS reminders appear here when reminders and Twilio are enabled on the server.
+                                </p>
+                                <p th:if="${smsRemindersAvailable}" class="text-muted small mb-0 mt-1">
+                                    Email confirmation is always sent. Text message: booking confirmation now, plus a reminder ~24 hours before (or at booking if sooner).
+                                </p>
+                            </div>
+                            <div class="col-12 mt-2" th:if="${!remindersEnabled}">
+                                <p class="text-muted small mb-0">
+                                    You will receive a booking confirmation by email. Scheduled ~24h reminders are disabled on this server.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -159,6 +193,17 @@ const dateInput         = document.getElementById('dateInput');
 const slotsContainer    = document.getElementById('slotsContainer');
 const selectedTimeInput = document.getElementById('selectedTime');
 const submitBtn         = document.getElementById('submitBtn');
+const customerPhone     = document.getElementById('customerPhone');
+const phoneRequiredMark = document.getElementById('phoneRequiredMark');
+
+function syncReminderUi() {
+    const sms = document.getElementById('reminderSms')?.checked;
+    if (phoneRequiredMark) phoneRequiredMark.style.display = sms ? '' : 'none';
+    if (customerPhone) customerPhone.required = !!sms;
+}
+document.querySelectorAll('input[name="reminderChannel"]').forEach(r =>
+    r.addEventListener('change', syncReminderUi));
+syncReminderUi();
 
 // Prevent past dates
 dateInput.min = new Date().toISOString().split('T')[0];
@@ -405,6 +450,10 @@ document.getElementById('bookingForm').addEventListener('submit', function (e) {
             return;
         }
         providerSelect.value = resolvedProviderId;
+    }
+    if (document.getElementById('reminderSms')?.checked && !customerPhone.value.trim()) {
+        e.preventDefault();
+        alert('Please enter a mobile number for SMS reminders.');
     }
 });
 </script>

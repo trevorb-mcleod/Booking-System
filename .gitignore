@@ -44,3 +44,5 @@ build/
 # application.properties holds SMTP keys, admin PIN, base-url, etc.
 # Copy application.properties.example → application.properties and fill in values.
 src/main/resources/application.properties
+.env
+.env.local

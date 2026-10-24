@@ -181,6 +181,23 @@ public class BookingManager {
                                                   String serviceId,
                                                   LocalDateTime startTime,
                                                   String notes) {
+        return bookAppointment(clientId, providerId, serviceId, startTime, notes, ReminderChannel.EMAIL);
+    }
+
+    public Optional<Appointment> bookAppointment(String clientId, String providerId,
+                                                  String serviceId,
+                                                  LocalDateTime startTime,
+                                                  String notes,
+                                                  ReminderChannel reminderChannel) {
+        return bookAppointment(clientId, providerId, serviceId, startTime, notes, reminderChannel, null);
+    }
+
+    public Optional<Appointment> bookAppointment(String clientId, String providerId,
+                                                  String serviceId,
+                                                  LocalDateTime startTime,
+                                                  String notes,
+                                                  ReminderChannel reminderChannel,
+                                                  String reminderPhone) {
         Optional<Client>   cOpt = clientRepo.findById(clientId);
         Optional<Provider> pOpt = providerRepo.findById(providerId);
         Optional<Service>  sOpt = serviceRepo.findById(serviceId);
@@ -200,7 +217,20 @@ public class BookingManager {
         Appointment appt = new Appointment(cOpt.get(), pOpt.get(), service, startTime);
         appt.setStatus(AppointmentStatus.CONFIRMED);
         if (notes != null && !notes.isBlank()) appt.setNotes(notes);
+        appt.setReminderChannel(reminderChannel != null ? reminderChannel : ReminderChannel.EMAIL);
+        if (appt.getReminderChannel() == ReminderChannel.SMS
+                && reminderPhone != null && !reminderPhone.isBlank()) {
+            appt.setReminderPhone(reminderPhone.trim());
+        }
         return Optional.of(appointmentRepo.save(appt));
+    }
+
+    public boolean markReminderSent(String appointmentId) {
+        return appointmentRepo.findById(appointmentId).map(a -> {
+            a.setReminderSent(true);
+            appointmentRepo.save(a);
+            return true;
+        }).orElse(false);
     }
 
     public boolean cancelAppointment(String appointmentId) {
@@ -216,6 +246,14 @@ public class BookingManager {
         return appointmentRepo.findById(appointmentId).map(a -> {
             if (a.getStatus() != AppointmentStatus.CONFIRMED) return false;
             a.setStatus(AppointmentStatus.COMPLETED);
+            appointmentRepo.save(a);
+            return true;
+        }).orElse(false);
+    }
+
+    public boolean updateAppointmentNotes(String appointmentId, String notes) {
+        return appointmentRepo.findById(appointmentId).map(a -> {
+            a.setNotes(notes == null ? "" : notes.trim());
             appointmentRepo.save(a);
             return true;
         }).orElse(false);
@@ -246,5 +284,19 @@ public class BookingManager {
 
     public List<Appointment> getAllAppointments() {
         return appointmentRepo.findAllByOrderByStartTimeAsc();
+    }
+
+    /** Applies date, provider, and client filters together (AND). Omit a criterion by passing null/blank. */
+    public List<Appointment> getAppointmentsFiltered(LocalDate date,
+                                                     String providerId,
+                                                     String clientId) {
+        String provider = (providerId != null && !providerId.isBlank()) ? providerId : null;
+        String client   = (clientId != null && !clientId.isBlank()) ? clientId : null;
+
+        return appointmentRepo.findAllByOrderByStartTimeAsc().stream()
+                .filter(a -> date == null || a.getStartTime().toLocalDate().equals(date))
+                .filter(a -> provider == null || a.getProvider().getId().equals(provider))
+                .filter(a -> client == null || a.getClient().getId().equals(client))
+                .toList();
     }
 }

@@ -1,0 +1,46 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Do NOT put secret values in this file. Set them in the Render Dashboard (sync: false).
+services:
+  - type: web
+    name: booksmart
+    runtime: docker
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: BOOKING_DB_PATH
+        value: /data/booking.db
+      - key: BOOKING_BUSINESS_NAME
+        value: BookSmart
+      - key: BOOKING_BASE_URL
+        sync: false
+      - key: BOOKING_ADMIN_PIN
+        sync: false
+      - key: BOOKING_EMAIL_ENABLED
+        value: "false"
+      - key: BOOKING_REMINDERS_ENABLED
+        value: "false"
+      - key: BOOKING_SMS_ENABLED
+        value: "false"
+      # Optional — only if you enable email in the dashboard:
+      - key: BOOKING_REMINDERS_FROM
+        sync: false
+      - key: SPRING_MAIL_HOST
+        sync: false
+      - key: SPRING_MAIL_USERNAME
+        sync: false
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
+      # Optional — only if you enable SMS:
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_API_KEY_SID
+        sync: false
+      - key: TWILIO_API_KEY_SECRET
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+# Optional on paid Render plans: attach a disk at /data so BOOKING_DB_PATH survives redeploys.

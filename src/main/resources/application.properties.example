@@ -2,6 +2,9 @@ spring.application.name=Booking System
 server.port=8080
 spring.thymeleaf.cache=true
 
+management.endpoints.web.exposure.include=health
+management.endpoint.health.show-details=never
+
 # ── SQLite Database ────────────────────────────────────────────────────────────
 spring.datasource.url=jdbc:sqlite:booking.db
 spring.datasource.driver-class-name=org.sqlite.JDBC
@@ -33,4 +36,19 @@ spring.mail.username=YOUR_BREVO_SMTP_LOGIN
 spring.mail.password=YOUR_BREVO_SMTP_KEY
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
+
+# ── SMS reminders (Twilio) ────────────────────────────────────────────────────
+# Customers can choose email or SMS for ~24h reminders at booking time.
+booking.sms.enabled=false
+# Twilio trial: true (template sms_appointment_reminders). After upgrade: false for custom message bodies.
+booking.sms.trial-mode=true
+# Account SID (starts with AC) — Twilio Console home page
+twilio.account-sid=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Option A: primary Auth Token (Console → Account → Auth token)
+twilio.auth-token=
+# Option B: API key (Console → Account → API keys) — use BOTH lines, leave auth-token empty
+twilio.api-key-sid=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+twilio.api-key-secret=your_secret_shown_once_at_creation
+# Twilio phone number in E.164 format, e.g. +15551234567
+twilio.from-number=+15551234567
 

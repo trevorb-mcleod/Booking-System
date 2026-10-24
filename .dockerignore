@@ -1,0 +1,12 @@
+target/
+.git/
+.idea/
+.vscode/
+*.iml
+*.db
+.env
+.env.*
+!/.env.example
+src/main/resources/application.properties
+docs/
+.github/

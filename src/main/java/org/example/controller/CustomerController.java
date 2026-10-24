@@ -1,9 +1,12 @@
 package org.example.controller;
 
+import org.example.config.AppointmentNotificationService;
 import org.example.config.EmailService;
+import org.example.config.ReminderOptions;
 import org.example.manager.BookingManager;
 import org.example.model.Appointment;
 import org.example.model.Client;
+import org.example.model.ReminderChannel;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -31,13 +34,20 @@ public class CustomerController {
 
     private final BookingManager manager;
     private final EmailService   emailService;
+    private final AppointmentNotificationService notifications;
+    private final ReminderOptions reminderOptions;
 
     @Value("${booking.business-name:BookSmart}")
     private String businessName;
 
-    public CustomerController(BookingManager manager, EmailService emailService) {
-        this.manager      = manager;
-        this.emailService = emailService;
+    public CustomerController(BookingManager manager,
+                              EmailService emailService,
+                              AppointmentNotificationService notifications,
+                              ReminderOptions reminderOptions) {
+        this.manager        = manager;
+        this.emailService   = emailService;
+        this.notifications  = notifications;
+        this.reminderOptions = reminderOptions;
     }
 
     /** Public home page: shows providers, services, and a "Book Now" CTA. */
@@ -61,6 +71,8 @@ public class CustomerController {
     public String bookForm(@RequestParam(required = false) String provider, Model model) {
         model.addAttribute("providers",          manager.getAllProviders());
         model.addAttribute("selectedProviderId", provider != null ? provider : "");
+        model.addAttribute("remindersEnabled", reminderOptions.remindersEnabled());
+        model.addAttribute("smsRemindersAvailable", reminderOptions.smsChoiceAvailable());
         return "customer/book";
     }
 
@@ -74,14 +86,22 @@ public class CustomerController {
                        @RequestParam String date,
                        @RequestParam String selectedTime,
                        @RequestParam(required = false, defaultValue = "") String notes,
+                       @RequestParam(required = false, defaultValue = "EMAIL") String reminderChannel,
                        RedirectAttributes  ra) {
 
-        // Find existing client by email, or create a new one
-        Client client = manager.findClientByEmail(customerEmail.trim())
-                .orElseGet(() -> manager.addClient(
-                        customerName.trim(),
-                        customerEmail.trim(),
-                        customerPhone.trim()));
+        ReminderChannel channel = parseReminderChannel(reminderChannel);
+        if (!reminderOptions.remindersEnabled()) {
+            channel = ReminderChannel.EMAIL;
+        } else if (channel == ReminderChannel.SMS) {
+            if (customerPhone == null || customerPhone.isBlank()) {
+                ra.addFlashAttribute("errorMsg", "Please enter a mobile number for SMS reminders.");
+                return "redirect:/book";
+            }
+            if (!reminderOptions.smsChoiceAvailable()) {
+                ra.addFlashAttribute("errorMsg", "SMS reminders are not available right now. Please choose email.");
+                return "redirect:/book";
+            }
+        }
 
         LocalDateTime startTime;
         try {
@@ -93,12 +113,21 @@ public class CustomerController {
             return "redirect:/book";
         }
 
-        Optional<Appointment> result =
-                manager.bookAppointment(client.getId(), providerId, serviceId, startTime, notes);
+        String email = customerEmail.trim();
+        Client client = manager.findClientByEmail(email)
+                .orElseGet(() -> manager.addClient(
+                        customerName.trim(),
+                        email,
+                        customerPhone == null ? "" : customerPhone.trim()));
+
+        String reminderPhone = channel == ReminderChannel.SMS ? customerPhone.trim() : null;
+
+        Optional<Appointment> result = manager.bookAppointment(
+                client.getId(), providerId, serviceId, startTime, notes, channel, reminderPhone);
 
         if (result.isPresent()) {
-            Appointment appt = result.get();
-            emailService.sendConfirmation(appt);
+            Appointment appt = manager.findAppointmentById(result.get().getId()).orElse(result.get());
+            notifications.onAppointmentBooked(appt);
             ra.addFlashAttribute("apptId",          appt.getId());
             ra.addFlashAttribute("apptCancelToken",  appt.getCancelToken());
             ra.addFlashAttribute("apptProvider",    appt.getProvider().getName());
@@ -190,6 +219,15 @@ public class CustomerController {
             ra.addFlashAttribute("justCancelled", true);
         }
         return "redirect:/cancel/" + token;
+    }
+
+    private static ReminderChannel parseReminderChannel(String value) {
+        if (value == null || value.isBlank()) return ReminderChannel.EMAIL;
+        try {
+            return ReminderChannel.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ReminderChannel.EMAIL;
+        }
     }
 }
 

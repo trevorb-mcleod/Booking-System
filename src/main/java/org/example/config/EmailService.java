@@ -78,10 +78,17 @@ public class EmailService {
              cancellationBody(a));
     }
 
+    /** ~24-hour reminder; returns true if the message was handed off to SMTP. */
+    public boolean sendReminder(Appointment a) {
+        return send(a.getClient().getEmail(),
+                "Reminder: Your appointment tomorrow at " + businessName,
+                reminderBody(a));
+    }
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
-    private void send(String to, String subject, String body) {
-        if (!emailEnabled || mailSender == null || to == null || to.isBlank()) return;
+    private boolean send(String to, String subject, String body) {
+        if (!emailEnabled || mailSender == null || to == null || to.isBlank()) return false;
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom(fromAddress);
@@ -90,9 +97,38 @@ public class EmailService {
             msg.setText(body);
             mailSender.send(msg);
             System.out.printf("[EmailService] Sent \"%s\" to %s%n", subject, to);
+            return true;
         } catch (Exception ex) {
             System.err.printf("[EmailService] Failed to send to %s: %s%n", to, ex.getMessage());
+            return false;
         }
+    }
+
+    private String reminderBody(Appointment a) {
+        String cancelLink = (a.getCancelToken() != null)
+                ? baseUrl + "/cancel/" + a.getCancelToken() : "";
+        return String.format(
+                "Hi %s,%n%n" +
+                "This is a friendly reminder about your upcoming appointment at %s.%n%n" +
+                "  Confirmation #: %s%n" +
+                "  Provider:       %s%n" +
+                "  Service:        %s%n" +
+                "  Date:           %s%n" +
+                "  Time:           %s – %s%n%n" +
+                (cancelLink.isEmpty() ? "" :
+                "Need to cancel? Use the link below:%n" +
+                cancelLink + "%n%n") +
+                "See you soon!%n" +
+                "The %s Team",
+                a.getClient().getName(),
+                businessName,
+                a.getId(),
+                a.getProvider().getName(),
+                a.getService().getName(),
+                a.getStartTime().format(DATE_FMT),
+                a.getStartTime().format(TIME_FMT),
+                a.getEndTime().format(TIME_FMT),
+                businessName);
     }
 
     private String confirmationBody(Appointment a) {

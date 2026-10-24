@@ -40,6 +40,18 @@ public class Appointment {
     /** Unique token used in self-service cancellation links — never exposed as the main ID. */
     private String cancelToken;
 
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "TEXT DEFAULT 'EMAIL'")
+    private ReminderChannel reminderChannel = ReminderChannel.EMAIL;
+
+    /** Set after a ~24h reminder is successfully delivered (email or SMS). */
+    @Column(nullable = false, columnDefinition = "INTEGER NOT NULL DEFAULT 0")
+    private boolean reminderSent;
+
+    /** SMS destination captured at booking; not updated when client record changes later. */
+    @Column(columnDefinition = "TEXT")
+    private String reminderPhone;
+
     /** Required by JPA. */
     protected Appointment() {}
 
@@ -51,8 +63,10 @@ public class Appointment {
         this.service   = service;
         this.startTime = startTime;
         this.endTime   = startTime.plusMinutes(service.getDurationMinutes());
-        this.status    = AppointmentStatus.PENDING;
-        this.notes     = "";
+        this.status          = AppointmentStatus.PENDING;
+        this.notes           = "";
+        this.reminderChannel = ReminderChannel.EMAIL;
+        this.reminderSent    = false;
     }
 
     // ── Getters & Setters ────────────────────────────────────────────────────
@@ -68,6 +82,14 @@ public class Appointment {
     public String           getNotes()                     { return notes; }
     public void             setNotes(String notes)         { this.notes = notes; }
     public String           getCancelToken()               { return cancelToken; }
+    public ReminderChannel  getReminderChannel() {
+        return reminderChannel != null ? reminderChannel : ReminderChannel.EMAIL;
+    }
+    public void             setReminderChannel(ReminderChannel c) { this.reminderChannel = c; }
+    public boolean          isReminderSent()               { return reminderSent; }
+    public void             setReminderSent(boolean sent)  { this.reminderSent = sent; }
+    public String           getReminderPhone()             { return reminderPhone; }
+    public void             setReminderPhone(String phone) { this.reminderPhone = phone; }
 
     @Override
     public String toString() {

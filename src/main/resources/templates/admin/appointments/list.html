@@ -41,20 +41,23 @@
             <form th:action="@{/admin/appointments}" method="get" class="row g-2 align-items-end">
                 <div class="col-auto">
                     <label class="form-label fw-semibold mb-1">By Date</label>
-                    <input type="date" name="date" class="form-control form-control-sm" style="width:180px;"/>
+                    <input type="date" name="date" class="form-control form-control-sm" style="width:180px;"
+                           th:value="${selectedDate}"/>
                 </div>
                 <div class="col-auto">
                     <label class="form-label fw-semibold mb-1">By Provider</label>
                     <select name="providerId" class="form-select form-select-sm" style="width:180px;">
                         <option value="">— All —</option>
-                        <option th:each="p : ${providers}" th:value="${p.id}" th:text="${p.name}"></option>
+                        <option th:each="p : ${providers}" th:value="${p.id}" th:text="${p.name}"
+                                th:selected="${p.id == selectedProviderId}"></option>
                     </select>
                 </div>
                 <div class="col-auto">
                     <label class="form-label fw-semibold mb-1">By Client</label>
                     <select name="clientId" class="form-select form-select-sm" style="width:180px;">
                         <option value="">— All —</option>
-                        <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}"></option>
+                        <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}"
+                                th:selected="${c.id == selectedClientId}"></option>
                     </select>
                 </div>
                 <div class="col-auto d-flex gap-2">
@@ -106,6 +109,9 @@
                             <form th:if="${a.status.toString() == 'CONFIRMED'}"
                                   th:action="@{/admin/appointments/{id}/complete(id=${a.id})}" method="post"
                                   class="d-inline">
+                                <input type="hidden" name="date" th:value="${selectedDate}"/>
+                                <input type="hidden" name="providerId" th:value="${selectedProviderId}"/>
+                                <input type="hidden" name="clientId" th:value="${selectedClientId}"/>
                                 <button class="btn btn-sm btn-outline-success me-1"
                                         title="Mark Complete">
                                     <i class="bi bi-check-circle"></i>
@@ -123,6 +129,9 @@
                                   th:action="@{/admin/appointments/{id}/cancel(id=${a.id})}" method="post"
                                   class="d-inline"
                                   onsubmit="return confirm('Cancel this appointment?')">
+                                <input type="hidden" name="date" th:value="${selectedDate}"/>
+                                <input type="hidden" name="providerId" th:value="${selectedProviderId}"/>
+                                <input type="hidden" name="clientId" th:value="${selectedClientId}"/>
                                 <button class="btn btn-sm btn-outline-danger" title="Cancel">
                                     <i class="bi bi-x-circle"></i>
                                 </button>
@@ -141,6 +150,9 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <form th:action="@{/admin/appointments/{id}/notes(id=${a.id})}" method="post">
+                    <input type="hidden" name="date" th:value="${selectedDate}"/>
+                    <input type="hidden" name="providerId" th:value="${selectedProviderId}"/>
+                    <input type="hidden" name="clientId" th:value="${selectedClientId}"/>
                     <div class="modal-header">
                         <h5 class="modal-title"><i class="bi bi-sticky me-1"></i>Notes</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

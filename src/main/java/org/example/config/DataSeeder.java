@@ -5,6 +5,7 @@ import org.example.manager.BookingManager;
 import org.example.model.Client;
 import org.example.model.Provider;
 import org.example.model.Service;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -20,6 +21,7 @@ import java.time.LocalTime;
  *   3. Remove or adjust the sample appointments below
  */
 @Component
+@Profile("!test")
 public class DataSeeder {
 
     private final BookingManager manager;

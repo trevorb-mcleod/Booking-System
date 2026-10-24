@@ -6,6 +6,87 @@ A self-hosted appointment booking platform for small businesses: customers book 
 
 ![Tests](https://github.com/trevorb-mcleod/Booking-System/actions/workflows/test.yml/badge.svg)
 
+## Resume highlights
+
+Use or adapt these on a resume or LinkedIn project blurb:
+
+- Built **BookSmart**, a full-stack appointment platform (Spring Boot 3, Thymeleaf, SQLite) with customer booking and a PIN-protected staff portal.
+- Implemented **conflict-aware scheduling**, live slot APIs, “any available provider” assignment, and **AND-style appointment filters** for admin.
+- Delivered **token-based self-service cancellation** (no customer login) plus confirmation email, `.ics` export, and optional **SMS/email reminders** (Brevo, Twilio).
+- Integrated **external services** behind configuration flags; added **JUnit 5** integration tests and **GitHub Actions CI** (`mvn test` on push).
+
+## Architecture
+
+Server-rendered monolith: HTML from Thymeleaf, JSON APIs for dynamic booking UI, scheduled reminders, and optional third-party messaging.
+
+```mermaid
+flowchart TB
+  subgraph clients [Browser]
+    Customer[Customer pages]
+    Admin[Staff portal /admin]
+  end
+
+  subgraph app [Spring Boot]
+    MVC[Controllers]
+    BM[BookingManager]
+    JPA[(SQLite via JPA)]
+    Sched[ReminderService scheduler]
+    Notify[Email / SMS services]
+  end
+
+  subgraph api [REST API]
+    Slots["/api/slots"]
+    Cal["/api/appointments/calendar"]
+  end
+
+  subgraph external [Optional integrations]
+    Brevo[Brevo SMTP]
+    Twilio[Twilio SMS]
+  end
+
+  Customer --> MVC
+  Admin --> MVC
+  Customer --> Slots
+  Customer --> Cal
+  MVC --> BM
+  Slots --> BM
+  Cal --> BM
+  BM --> JPA
+  Sched --> BM
+  Sched --> Notify
+  MVC --> Notify
+  Notify --> Brevo
+  Notify --> Twilio
+```
+
+| Path | Role |
+|------|------|
+| `CustomerController`, templates under `customer/` | Public booking and cancel-by-token |
+| `AppointmentController`, `DashboardController`, … | Admin CRUD, calendar, export |
+| `ApiController` | Slot availability and calendar JSON for the booking wizard |
+| `BookingManager` | Domain logic: conflicts, filters, persistence |
+| `EmailService` / `SmsService` / `AppointmentNotificationService` | Confirmations, reminders, channel preference |
+
+## Screenshots
+
+### Customer experience
+
+| Home | Booking |
+|:---:|:---:|
+| ![Customer home — team and services](docs/screenshots/customer-home.png) | ![Multi-step booking form with live slot picker](docs/screenshots/customer-book.png) |
+
+### Staff portal
+
+| Appointments |
+|:---:|
+| ![Staff appointments list, filters, and actions](docs/screenshots/admin-appointments.png) |
+
+### Notifications
+
+| Booking confirmation email |
+|:---:|
+| ![Confirmation email with cancel link](docs/screenshots/email-confirmation.png) |
+
 ## Features
 
 ### Customer-facing
@@ -54,7 +135,7 @@ Edit `application.properties` (see example file for email, SMS, branding, admin 
 mvn test
 ```
 
-Uses an in-memory SQLite database and the `test` profile (demo seed data disabled).
+Uses an in-memory SQLite database and the `test` profile (demo seed data disabled). Coverage includes `BookingManager` integration tests, `@WebMvcTest` for customer `/book` and `/cancel/{token}`, and unit tests for email/SMS/notification services (mocked SMTP and Twilio).
 
 ### 3. Run
 
@@ -101,11 +182,34 @@ App default: **http://localhost:8080**
 
 Verify recipient numbers on trial accounts. Set `booking.base-url` to your public URL so cancel links work in email/SMS.
 
+## Live demo (Render)
+
+Deploy with **Docker + environment variables only** — no keys in the repo.
+
+| Artifact | Purpose |
+|----------|---------|
+| `Dockerfile` | Production image (excludes `application.properties`) |
+| `render.yaml` | Render Blueprint; secrets use `sync: false` (set in dashboard) |
+| `application-prod.properties` | Non-secret defaults; `${ENV}` placeholders |
+| `.env.example` | Local Docker reference — copy to `.env` (gitignored) |
+
+**Full walkthrough:** [docs/deploy-render.md](docs/deploy-render.md)
+
+Minimum env vars for a public demo:
+
+- `BOOKING_BASE_URL` — your `https://….onrender.com` URL  
+- `BOOKING_ADMIN_PIN` — strong PIN (not the example/dev default)  
+- Leave `BOOKING_EMAIL_ENABLED` / `BOOKING_SMS_ENABLED` at `false` until SMTP/Twilio vars are set in Render  
+
+On `prod` startup, `ProdStartupChecks` refuses weak PINs, `localhost` base URLs, and half-configured email/SMS so misconfigured deploys fail before going live.
+
+Health check: `/actuator/health`
+
 ## Deployment notes
 
 - `booking.db` is created in the working directory — back it up regularly
-- Do not commit `application.properties` or `booking.db` (gitignored)
-- Use a public `booking.base-url` in production
+- Do not commit `application.properties`, `.env`, or `booking.db` (gitignored)
+- Use a public `booking.base-url` in production (env: `BOOKING_BASE_URL`)
 
 ## Room for improvement
 
@@ -113,11 +217,11 @@ The core booking loop is implemented end-to-end; the items below are deliberate 
 
 ### High impact for recruiters (recommended order)
 
-1. **CI pipeline** — GitHub Actions: `mvn test` on every push/PR. Badge in the README.
-2. **More tests** — `@WebMvcTest` for booking/cancel endpoints; tests for notification services with mocked SMTP/Twilio.
-3. **Live demo** — Optional hosted URL in README (you’ve used Railway; any host works).
-4. **README polish** — Architecture diagram (customer vs admin vs scheduler vs integrations), 3–5 screenshots or a short demo GIF, “Resume highlights” bullet list.
-5. **PostgreSQL profile** — Spring profile `prod` with Postgres while keeping SQLite for dev. Common interview talking point (migrations, dialect, config).
+1. ~~**CI pipeline**~~ — GitHub Actions + README badge (done).
+2. ~~**README polish**~~ — Architecture diagram, resume highlights, and screenshots under `docs/screenshots/` (done).
+3. ~~**More tests**~~ — `@WebMvcTest` for booking/cancel; notification services with mocked SMTP/Twilio (done).
+4. ~~**Live demo**~~ — Docker + Render Blueprint + env-only secrets ([deploy-render.md](docs/deploy-render.md)).
+5. **PostgreSQL profile** — Spring profile `prod` with Postgres while keeping SQLite for dev.
 
 ### Product & UX
 
