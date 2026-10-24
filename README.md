@@ -4,6 +4,8 @@ A self-hosted appointment booking platform for small businesses: customers book 
 
 **Repository:** [github.com/trevorb-mcleod/Booking-System](https://github.com/trevorb-mcleod/Booking-System)
 
+**Live demo:** [booksmart-9bae.onrender.com](https://booksmart-9bae.onrender.com) (Render free tier — may sleep when idle; staff portal at `/admin`, PIN not public)
+
 ![Tests](https://github.com/trevorb-mcleod/Booking-System/actions/workflows/test.yml/badge.svg)
 
 ## Resume highlights
@@ -14,6 +16,7 @@ Use or adapt these on a resume or LinkedIn project blurb:
 - Implemented **conflict-aware scheduling**, live slot APIs, “any available provider” assignment, and **AND-style appointment filters** for admin.
 - Delivered **token-based self-service cancellation** (no customer login) plus confirmation email, `.ics` export, and optional **SMS/email reminders** (Brevo, Twilio).
 - Integrated **external services** behind configuration flags; added **JUnit 5** integration tests and **GitHub Actions CI** (`mvn test` on push).
+- Deployed a **public demo** on Render (Docker, env-only secrets; email/SMS optional via dashboard config).
 
 ## Architecture
 
@@ -177,14 +180,16 @@ App default: **http://localhost:8080**
 1. Twilio Console → assign trial or purchased **From** number (`twilio.from-number`)
 2. Set Account SID + API key (or Auth Token) in `application.properties`
 3. `booking.sms.enabled=true`
-4. **Trial:** `booking.sms.trial-mode=true` (Twilio predefined template; sample date/time in body)
-5. **Upgraded account:** `booking.sms.trial-mode=false` for custom message text
+4. **Trial / free Twilio:** `booking.sms.trial-mode=true` — Twilio requires the predefined template `sms_appointment_reminders`, not custom text. **The date and time in trial SMS are Twilio’s sample values, not your real appointment.** Email confirmation always shows the correct booking details; accurate SMS copy requires an upgraded Twilio account and `booking.sms.trial-mode=false`.
+5. **Upgraded account:** `booking.sms.trial-mode=false` — app sends custom bodies with real service, provider, date, and confirmation number.
 
 Verify recipient numbers on trial accounts. Set `booking.base-url` to your public URL so cancel links work in email/SMS.
 
 ## Live demo (Render)
 
-Deploy with **Docker + environment variables only** — no keys in the repo.
+**Public instance:** https://booksmart-9bae.onrender.com
+
+Deploy your own with **Docker + environment variables only** — no keys in the repo.
 
 | Artifact | Purpose |
 |----------|---------|
@@ -200,6 +205,8 @@ Minimum env vars for a public demo:
 - `BOOKING_BASE_URL` — your `https://….onrender.com` URL  
 - `BOOKING_ADMIN_PIN` — strong PIN (not the example/dev default)  
 - Leave `BOOKING_EMAIL_ENABLED` / `BOOKING_SMS_ENABLED` at `false` until SMTP/Twilio vars are set in Render  
+
+If you enable SMS on a **Twilio trial** account, expect **incorrect dates/times in text messages** (Twilio template limitation). Use **email** for accurate confirmations on trial, or upgrade Twilio for branded SMS.
 
 On `prod` startup, `ProdStartupChecks` refuses weak PINs, `localhost` base URLs, and half-configured email/SMS so misconfigured deploys fail before going live.
 
@@ -220,7 +227,7 @@ The core booking loop is implemented end-to-end; the items below are deliberate 
 1. ~~**CI pipeline**~~ — GitHub Actions + README badge (done).
 2. ~~**README polish**~~ — Architecture diagram, resume highlights, and screenshots under `docs/screenshots/` (done).
 3. ~~**More tests**~~ — `@WebMvcTest` for booking/cancel; notification services with mocked SMTP/Twilio (done).
-4. ~~**Live demo**~~ — Docker + Render Blueprint + env-only secrets ([deploy-render.md](docs/deploy-render.md)).
+4. ~~**Live demo**~~ — [booksmart-9bae.onrender.com](https://booksmart-9bae.onrender.com); Docker + Render Blueprint ([deploy-render.md](docs/deploy-render.md)).
 5. **PostgreSQL profile** — Spring profile `prod` with Postgres while keeping SQLite for dev.
 
 ### Product & UX
