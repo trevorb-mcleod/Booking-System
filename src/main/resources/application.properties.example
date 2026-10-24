@@ -4,6 +4,7 @@ spring.thymeleaf.cache=true
 
 management.endpoints.web.exposure.include=health
 management.endpoint.health.show-details=never
+management.health.mail.enabled=${booking.email.enabled:false}
 
 # ── SQLite Database ────────────────────────────────────────────────────────────
 spring.datasource.url=jdbc:sqlite:booking.db
