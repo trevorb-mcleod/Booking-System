@@ -32,6 +32,9 @@ services:
         sync: false
       - key: SPRING_MAIL_PASSWORD
         sync: false
+      # Required on Render (SMTP port 587 is blocked); Brevo → SMTP & API → API keys
+      - key: BREVO_API_KEY
+        sync: false
       # Optional — only if you enable SMS:
       - key: TWILIO_ACCOUNT_SID
         sync: false

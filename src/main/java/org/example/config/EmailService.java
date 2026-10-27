@@ -17,8 +17,9 @@ import java.time.format.DateTimeFormatter;
  * configured, all send calls are silently skipped.
  *
  * To enable:
- *   1. Set booking.email.enabled=true in application.properties
- *   2. Fill in spring.mail.* SMTP credentials
+ *   1. Set booking.email.enabled=true
+ *   2. On Render and other SMTP-blocked hosts: set BREVO_API_KEY (HTTPS API)
+ *   3. Locally: spring.mail.* SMTP credentials, or BREVO_API_KEY
  */
 @Service
 public class EmailService {
@@ -29,6 +30,9 @@ public class EmailService {
     /** Null when spring-boot-starter-mail is not configured. */
     @Autowired(required = false)
     private JavaMailSender mailSender;
+
+    @Autowired
+    private BrevoApiClient brevoApiClient;
 
     @Value("${booking.email.enabled:false}")
     private boolean emailEnabled;
@@ -51,16 +55,20 @@ public class EmailService {
             System.out.println("[EmailService] Disabled (booking.email.enabled=false).");
             return;
         }
+        if (brevoApiClient.isConfigured()) {
+            System.out.printf("[EmailService] Ready — sending from %s via Brevo HTTPS API.%n", fromAddress);
+            return;
+        }
         if (mailSender == null) {
-            System.err.println("[EmailService] WARNING — enabled but JavaMailSender is not available. Check spring.mail.* configuration.");
+            System.err.println("[EmailService] WARNING — enabled but no BREVO_API_KEY and JavaMailSender is not available.");
             return;
         }
         boolean credsMissing = smtpUsername.isBlank()
                 || smtpUsername.equals("your-email@gmail.com");
         if (credsMissing) {
-            System.err.println("[EmailService] WARNING — booking.email.enabled=true but spring.mail.username looks like a placeholder. Update application.properties with real SMTP credentials.");
+            System.err.println("[EmailService] WARNING — set BREVO_API_KEY (hosted) or spring.mail.* SMTP credentials (local).");
         } else {
-            System.out.printf("[EmailService] Ready — sending from %s via %s.%n", fromAddress, smtpUsername);
+            System.out.printf("[EmailService] Ready — sending from %s via SMTP %s.%n", fromAddress, smtpUsername);
         }
     }
 
@@ -78,7 +86,7 @@ public class EmailService {
              cancellationBody(a));
     }
 
-    /** ~24-hour reminder; returns true if the message was handed off to SMTP. */
+    /** ~24-hour reminder; returns true if the message was sent. */
     public boolean sendReminder(Appointment a) {
         return send(a.getClient().getEmail(),
                 "Reminder: Your appointment tomorrow at " + businessName,
@@ -88,7 +96,13 @@ public class EmailService {
     // ── Internals ─────────────────────────────────────────────────────────────
 
     private boolean send(String to, String subject, String body) {
-        if (!emailEnabled || mailSender == null || to == null || to.isBlank()) return false;
+        if (!emailEnabled || to == null || to.isBlank()) return false;
+
+        if (brevoApiClient.isConfigured()) {
+            return brevoApiClient.send(fromAddress, businessName, to, to, subject, body);
+        }
+        if (mailSender == null) return false;
+
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom(fromAddress);

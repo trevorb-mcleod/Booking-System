@@ -22,9 +22,16 @@ This guide deploys from the repo **Dockerfile** with **no secrets in git**. All 
 
 ## Optional: email on Render
 
-1. Set `BOOKING_EMAIL_ENABLED=true`, `BOOKING_REMINDERS_ENABLED=true`.
-2. Add Brevo (or other SMTP) vars: `SPRING_MAIL_HOST`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `BOOKING_REMINDERS_FROM`.
-3. Redeploy. `ProdStartupChecks` fails the deploy if email is enabled but SMTP is incomplete.
+Render **blocks outbound SMTP** (port 587). Use Brevo’s **HTTPS API**, not SMTP, on Render:
+
+1. Set `BOOKING_EMAIL_ENABLED=true`, `BOOKING_REMINDERS_ENABLED=true`, `BOOKING_REMINDERS_FROM` (verified Brevo sender).
+2. In [Brevo](https://app.brevo.com) → **SMTP & API** → **API keys** → create a key (`xkeysib-…`).
+3. Set `BREVO_API_KEY` in the Render dashboard (secret). Redeploy.
+4. Startup logs should show `[EmailService] Ready — sending from … via Brevo HTTPS API.` and `[BrevoApiClient] Ready`.
+
+Keep `SPRING_MAIL_*` for local dev if you prefer SMTP; on Render the app uses `BREVO_API_KEY` when it is set.
+
+`ProdStartupChecks` requires `BOOKING_REMINDERS_FROM` plus either `BREVO_API_KEY` or complete SMTP vars.
 
 ## Optional: persistent SQLite
 

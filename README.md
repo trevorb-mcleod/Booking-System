@@ -172,8 +172,9 @@ App default: **http://localhost:8080**
 
 1. Sign up at [brevo.com](https://brevo.com)
 2. Verify a sender under **Senders**
-3. Create an **SMTP key** under **SMTP & API**
-4. Set `spring.mail.*` and `booking.reminders.from` in `application.properties`
+3. **Render / hosted:** set `BREVO_API_KEY` (Brevo → **SMTP & API** → **API keys**, `xkeysib-…`) — outbound SMTP is blocked on many PaaS hosts.
+4. **Local dev:** optional `spring.mail.*` SMTP key, or the same `BREVO_API_KEY` via env / `booking.brevo.api-key`
+5. Set `booking.reminders.from` (must match a verified sender)
 
 ## SMS (Twilio, optional)
 

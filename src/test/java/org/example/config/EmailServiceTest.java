@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.quality.Strictness;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -19,10 +21,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class EmailServiceTest {
 
     @Mock
     JavaMailSender mailSender;
+
+    @Mock
+    BrevoApiClient brevoApiClient;
 
     EmailService emailService;
 
@@ -32,6 +38,8 @@ class EmailServiceTest {
     void setUp() {
         emailService = new EmailService();
         ReflectionTestUtils.setField(emailService, "mailSender", mailSender);
+        ReflectionTestUtils.setField(emailService, "brevoApiClient", brevoApiClient);
+        when(brevoApiClient.isConfigured()).thenReturn(false);
         ReflectionTestUtils.setField(emailService, "emailEnabled", true);
         ReflectionTestUtils.setField(emailService, "fromAddress", "noreply@booksmart.test");
         ReflectionTestUtils.setField(emailService, "businessName", "BookSmart");

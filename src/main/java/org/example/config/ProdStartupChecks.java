@@ -39,9 +39,12 @@ public class ProdStartupChecks implements ApplicationRunner {
         }
 
         if (Boolean.parseBoolean(env.getProperty("booking.email.enabled", "false"))) {
-            requireNonBlank("SPRING_MAIL_USERNAME", env.getProperty("spring.mail.username"));
-            requireNonBlank("SPRING_MAIL_PASSWORD", env.getProperty("spring.mail.password"));
             requireNonBlank("BOOKING_REMINDERS_FROM", env.getProperty("booking.reminders.from"));
+            boolean brevoApi = !isBlank(env.getProperty("booking.brevo.api-key"));
+            if (!brevoApi) {
+                requireNonBlank("SPRING_MAIL_USERNAME", env.getProperty("spring.mail.username"));
+                requireNonBlank("SPRING_MAIL_PASSWORD", env.getProperty("spring.mail.password"));
+            }
         }
 
         if (Boolean.parseBoolean(env.getProperty("booking.sms.enabled", "false"))) {

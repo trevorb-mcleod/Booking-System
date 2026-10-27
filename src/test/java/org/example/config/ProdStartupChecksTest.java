@@ -42,11 +42,23 @@ class ProdStartupChecksTest {
     void emailEnabled_requiresSmtpSecrets() {
         MockEnvironment env = baseEnv();
         env.setProperty("booking.email.enabled", "true");
+        env.setProperty("booking.reminders.from", "noreply@example.com");
         ProdStartupChecks checks = new ProdStartupChecks(env);
 
         assertThatThrownBy(() -> checks.run(null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("SPRING_MAIL");
+    }
+
+    @Test
+    void emailEnabled_acceptsBrevoApiKeyWithoutSmtp() {
+        MockEnvironment env = baseEnv();
+        env.setProperty("booking.email.enabled", "true");
+        env.setProperty("booking.reminders.from", "noreply@example.com");
+        env.setProperty("booking.brevo.api-key", "xkeysib-test");
+        ProdStartupChecks checks = new ProdStartupChecks(env);
+
+        assertThatCode(() -> checks.run(null)).doesNotThrowAnyException();
     }
 
     private static MockEnvironment baseEnv() {
