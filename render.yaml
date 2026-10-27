@@ -5,7 +5,7 @@ services:
     name: booksmart
     runtime: docker
     plan: free
-    healthCheckPath: /actuator/health
+    healthCheckPath: /actuator/health/liveness
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
